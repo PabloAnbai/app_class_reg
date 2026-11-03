@@ -1,0 +1,20 @@
+/* Customizações adicionais ao Tailwind */
+
+/* Animação do botão do modo noturno */
+.toggle-checkbox:checked {
+    right: 0;
+    border-color: #3b82f6; /* Cor primária */
+}
+.toggle-checkbox:checked + .toggle-label {
+    background-color: #3b82f6;
+}
+.toggle-checkbox {
+    right: 1.25rem;
+    border-color: #d1d5db;
+    transition: right 0.3s ease, border-color 0.3s ease;
+}
+
+/* Transições globais mais suaves */
+* {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}

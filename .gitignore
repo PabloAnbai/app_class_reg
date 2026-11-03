@@ -1,0 +1,24 @@
+# Ambientes Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Configuracoes locais
+.env
+.env.*
+!.env.example
+
+# Arquivos temporarios e uploads
+uploads/
+*.tmp
+*.log
+
+# Dados enviados pelo usuario
+*.csv
+*.xlsx
+
+# Sistemas operacionais
+.DS_Store
+Thumbs.db
