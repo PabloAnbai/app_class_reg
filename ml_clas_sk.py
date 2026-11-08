@@ -5,8 +5,8 @@ from collections import Counter
 from sklearn import metrics as me
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
 
 
 def ler_csv(dados):
@@ -55,6 +55,9 @@ def ler_arquivo(arquivo):
 
 
 def executar(arquivo, test_size=0.2, modelo=None):
+    if modelo not in (None, "svc", "random_forest"):
+        raise ValueError("Modelo inválido para classificação.")
+
     feat, classes_originais = ler_arquivo(arquivo)
     classes = sorted(set(classes_originais), key=str)
     contagem_classes = Counter(classes_originais)
@@ -84,19 +87,13 @@ def executar(arquivo, test_size=0.2, modelo=None):
 
     modelos = {}
 
-    if modelo in (None, "mlp"):
-        mlp = MLPClassifier(
-            hidden_layer_sizes=(125,),
-            activation="logistic",
-            solver="adam",
-            alpha=0.01,
-            learning_rate="adaptive",
-            max_iter=10000,
-            random_state=42,
+    if modelo in (None, "svc"):
+        svc = SVC(
+            kernel="rbf",
         )
-        mlp.fit(x_treino_sc, y_treino)
-        mlp_pred = mlp.predict(x_teste_sc)
-        modelos["mlp"] = metricas(y_teste, mlp_pred)
+        svc.fit(x_treino_sc, y_treino)
+        svc_pred = svc.predict(x_teste_sc)
+        modelos["svc"] = metricas(y_teste, svc_pred)
 
     if modelo in (None, "random_forest"):
         rf = RandomForestClassifier(

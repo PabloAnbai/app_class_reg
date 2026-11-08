@@ -35,8 +35,12 @@ def analisar():
         raise BadRequest("Selecione um arquivo CSV ou XLSX.")
     if metodo not in ("classificacao", "regressao"):
         raise BadRequest("Selecione um método de análise.")
-    if modelo not in (None, "mlp", "random_forest"):
+    if modelo is not None and modelo not in ("mlp", "svc", "random_forest"):
         raise BadRequest("Selecione um modelo válido.")
+    if metodo == "classificacao" and modelo == "mlp":
+        raise BadRequest("Selecione um modelo válido para classificação.")
+    if metodo == "regressao" and modelo == "svc":
+        raise BadRequest("Selecione um modelo válido para regressão.")
     if not arquivo.filename.lower().endswith((".csv", ".xlsx")):
         raise BadRequest("Formato não suportado. Use CSV ou XLSX.")
     if test_size < 0.1 or test_size > 0.9:

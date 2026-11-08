@@ -21,9 +21,9 @@ def teste_csv_latin1_com_cabecalho_e_classificacao():
 
     resultado = ml_clas_sk.executar(csv_file("\n".join(linhas)), 0.2)
 
-    assert "mlp" in resultado["modelos"]
+    assert "svc" in resultado["modelos"]
     assert "random_forest" in resultado["modelos"]
-    assert 0 <= resultado["modelos"]["mlp"]["acuracia"] <= 1
+    assert 0 <= resultado["modelos"]["svc"]["acuracia"] <= 1
 
 
 def teste_classificacao_rejeita_classe_com_poucas_amostras():

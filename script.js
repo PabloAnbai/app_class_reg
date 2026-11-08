@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const metodosPorTipo = {
         classificacao: [
-            { value: 'mlp', label: 'Rede Neural MLP' },
+            { value: 'svc', label: 'SVC (Máquinas de Vetores de Suporte)' },
             { value: 'random_forest', label: 'Random Forest' },
         ],
         regressao: [
