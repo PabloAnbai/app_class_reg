@@ -74,13 +74,21 @@
                     </div>
                 </div>
 
-                <!-- Método -->
+                <!-- Tipo de tarefa -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Método de Análise</label>
-                    <select id="analysis-method" class="w-full p-3 bg-white dark:bg-dark-card border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white">
-                        <option value="">Selecione um método...</option>
+                    <label for="task-type" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Tipo de tarefa</label>
+                    <select id="task-type" class="w-full p-3 bg-white dark:bg-dark-card border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white">
+                        <option value="">Selecione o tipo de tarefa...</option>
                         <option value="classificacao">Classificação</option>
                         <option value="regressao">Regressão</option>
+                    </select>
+                </div>
+
+                <!-- Método -->
+                <div>
+                    <label for="analysis-method" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Método</label>
+                    <select id="analysis-method" class="w-full p-3 bg-white dark:bg-dark-card border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary outline-none transition-all dark:text-white" disabled>
+                        <option value="">Selecione primeiro o tipo de tarefa...</option>
                     </select>
                 </div>
 

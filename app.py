@@ -28,12 +28,15 @@ def script():
 def analisar():
     arquivo = request.files.get("arquivo")
     metodo = request.form.get("metodo")
+    modelo = request.form.get("modelo") or None
     test_size = int(request.form.get("test_size", 20)) / 100
 
     if arquivo is None or not arquivo.filename:
         raise BadRequest("Selecione um arquivo CSV ou XLSX.")
     if metodo not in ("classificacao", "regressao"):
         raise BadRequest("Selecione um método de análise.")
+    if modelo not in (None, "mlp", "random_forest"):
+        raise BadRequest("Selecione um modelo válido.")
     if not arquivo.filename.lower().endswith((".csv", ".xlsx")):
         raise BadRequest("Formato não suportado. Use CSV ou XLSX.")
     if test_size < 0.1 or test_size > 0.9:
@@ -41,9 +44,9 @@ def analisar():
 
     try:
         if metodo == "classificacao":
-            resultado = ml_clas_sk.executar(arquivo, test_size)
+            resultado = ml_clas_sk.executar(arquivo, test_size, modelo)
         else:
-            resultado = ml_reg_sk.executar(arquivo, test_size)
+            resultado = ml_reg_sk.executar(arquivo, test_size, modelo)
     except Exception as erro:
         raise BadRequest(f"Não foi possível analisar o arquivo: {erro}") from erro
 

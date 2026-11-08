@@ -82,10 +82,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const taskType = document.getElementById('task-type');
     const analysisMethod = document.getElementById('analysis-method');
     const runButton = document.getElementById('run-button');
     const runAllButton = document.getElementById('run-all-button');
     const status = document.getElementById('analysis-status');
+
+    const metodosPorTipo = {
+        classificacao: [
+            { value: 'mlp', label: 'Rede Neural MLP' },
+            { value: 'random_forest', label: 'Random Forest' },
+        ],
+        regressao: [
+            { value: 'mlp', label: 'Rede Neural MLP' },
+            { value: 'random_forest', label: 'Random Forest' },
+        ],
+    };
+
+    function atualizarMetodos() {
+        const metodos = metodosPorTipo[taskType.value] || [];
+        analysisMethod.replaceChildren();
+
+        if (!metodos.length) {
+            analysisMethod.disabled = true;
+            analysisMethod.add(new Option('Selecione primeiro o tipo de tarefa...', ''));
+            return;
+        }
+
+        analysisMethod.disabled = false;
+        analysisMethod.add(new Option('Selecione um método...', ''));
+        metodos.forEach((metodo) => {
+            analysisMethod.add(new Option(metodo.label, metodo.value));
+        });
+    }
+
+    taskType.addEventListener('change', atualizarMetodos);
 
     function showStatus(message, isError = false) {
         status.textContent = message;
@@ -95,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
         status.classList.remove('hidden');
     }
 
-    async function runAnalysis(method) {
+    async function runAnalysis(method, model = '') {
         if (!fileInput.files.length) {
             throw new Error('Selecione um arquivo CSV ou XLSX.');
         }
@@ -106,6 +137,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData();
         formData.append('arquivo', fileInput.files[0]);
         formData.append('metodo', method);
+        if (model) {
+            formData.append('modelo', model);
+        }
         formData.append('test_size', rangeInput.value);
 
         const response = await fetch('/api/analisar', {
@@ -120,9 +154,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderClassification(resultado) {
-        const melhor = resultado.modelos.random_forest.acuracia >= resultado.modelos.mlp.acuracia
-            ? resultado.modelos.random_forest
-            : resultado.modelos.mlp;
+        const melhores = Object.values(resultado.modelos);
+        const melhor = melhores.reduce((atual, candidato) =>
+            candidato.acuracia >= atual.acuracia ? candidato : atual
+        );
         document.getElementById('classification-mc').textContent = melhor.matriz_confusao.length;
         document.getElementById('classification-ac').textContent = `${(melhor.acuracia * 100).toFixed(2)}%`;
         document.getElementById('classification-pr').textContent = `${(melhor.precisao * 100).toFixed(2)}%`;
@@ -130,9 +165,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderRegression(resultado) {
-        const melhor = resultado.modelos.random_forest.r2 >= resultado.modelos.mlp.r2
-            ? resultado.modelos.random_forest
-            : resultado.modelos.mlp;
+        const melhores = Object.values(resultado.modelos);
+        const melhor = melhores.reduce((atual, candidato) =>
+            candidato.r2 >= atual.r2 ? candidato : atual
+        );
         document.getElementById('regression-mae').textContent = melhor.mae.toFixed(4);
         document.getElementById('regression-r2').textContent = melhor.r2.toFixed(4);
         document.getElementById('regression-mse').textContent = melhor.mse.toFixed(4);
@@ -140,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function executarMetodo(method) {
-        const result = await runAnalysis(method);
+        const result = await runAnalysis(method, analysisMethod.value);
         if (method === 'classificacao') {
             renderClassification(result);
         } else {
@@ -151,8 +187,14 @@ document.addEventListener('DOMContentLoaded', () => {
     runButton.addEventListener('click', async () => {
         runButton.disabled = true;
         try {
+            if (!taskType.value) {
+                throw new Error('Selecione o tipo de tarefa.');
+            }
+            if (!analysisMethod.value) {
+                throw new Error('Selecione o método.');
+            }
             showStatus('Executando análise...');
-            await executarMetodo(analysisMethod.value);
+            await executarMetodo(taskType.value);
             showStatus('Análise concluída.');
         } catch (error) {
             showStatus(error.message, true);

@@ -54,7 +54,7 @@ def ler_arquivo(arquivo):
     return atributos.values, classes_originais
 
 
-def executar(arquivo, test_size=0.2):
+def executar(arquivo, test_size=0.2, modelo=None):
     feat, classes_originais = ler_arquivo(arquivo)
     classes = sorted(set(classes_originais), key=str)
     contagem_classes = Counter(classes_originais)
@@ -82,33 +82,34 @@ def executar(arquivo, test_size=0.2):
     x_treino_sc = scaler.fit_transform(x_treino)
     x_teste_sc = scaler.transform(x_teste)
 
-    mlp = MLPClassifier(
-        hidden_layer_sizes=(125,),
-        activation="logistic",
-        solver="adam",
-        alpha=0.01,
-        learning_rate="adaptive",
-        max_iter=10000,
-        random_state=42,
-    )
-    mlp.fit(x_treino_sc, y_treino)
-    mlp_pred = mlp.predict(x_teste_sc)
+    modelos = {}
 
-    rf = RandomForestClassifier(
-        n_estimators=100,
-        criterion="gini",
-        random_state=42,
-        n_jobs=-1,
-    )
-    rf.fit(x_treino, y_treino)
-    rf_pred = rf.predict(x_teste)
+    if modelo in (None, "mlp"):
+        mlp = MLPClassifier(
+            hidden_layer_sizes=(125,),
+            activation="logistic",
+            solver="adam",
+            alpha=0.01,
+            learning_rate="adaptive",
+            max_iter=10000,
+            random_state=42,
+        )
+        mlp.fit(x_treino_sc, y_treino)
+        mlp_pred = mlp.predict(x_teste_sc)
+        modelos["mlp"] = metricas(y_teste, mlp_pred)
 
-    return {
-        "modelos": {
-            "mlp": metricas(y_teste, mlp_pred),
-            "random_forest": metricas(y_teste, rf_pred),
-        }
-    }
+    if modelo in (None, "random_forest"):
+        rf = RandomForestClassifier(
+            n_estimators=100,
+            criterion="gini",
+            random_state=42,
+            n_jobs=-1,
+        )
+        rf.fit(x_treino, y_treino)
+        rf_pred = rf.predict(x_teste)
+        modelos["random_forest"] = metricas(y_teste, rf_pred)
+
+    return {"modelos": modelos}
 
 
 def metricas(y_teste, y_pred):
