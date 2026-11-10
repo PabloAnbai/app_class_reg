@@ -54,7 +54,7 @@ def ler_arquivo(arquivo):
     return atributos.values, classes_originais
 
 
-def executar(arquivo, test_size=0.2, modelo=None):
+def executar(arquivo, test_size=0.2, modelo=None, configuracoes=None):
     if modelo not in (None, "svc", "random_forest"):
         raise ValueError("Modelo inválido para classificação.")
 
@@ -69,6 +69,9 @@ def executar(arquivo, test_size=0.2, modelo=None):
         )
     if len(feat) < 4:
         raise ValueError("A classificação exige pelo menos quatro amostras válidas.")
+
+    if test_size < len(classes) / len(feat):
+        test_size = len(classes) / len(feat)
 
     classe_para_numero = {classe: indice for indice, classe in enumerate(classes)}
     y = np.array([classe_para_numero[classe] for classe in classes_originais])
@@ -86,22 +89,21 @@ def executar(arquivo, test_size=0.2, modelo=None):
     x_teste_sc = scaler.transform(x_teste)
 
     modelos = {}
+    configuracoes = configuracoes or {}
 
     if modelo in (None, "svc"):
-        svc = SVC(
-            kernel="rbf",
-        )
+        parametros_svc = configuracoes.get("svc", {})
+        svc = SVC(**parametros_svc)
         svc.fit(x_treino_sc, y_treino)
         svc_pred = svc.predict(x_teste_sc)
         modelos["svc"] = metricas(y_teste, svc_pred)
 
     if modelo in (None, "random_forest"):
-        rf = RandomForestClassifier(
-            n_estimators=100,
-            criterion="gini",
-            random_state=42,
-            n_jobs=-1,
+        parametros_rf = configuracoes.get(
+            "random_forest_classificacao",
+            configuracoes.get("random_forest", {}),
         )
+        rf = RandomForestClassifier(**parametros_rf)
         rf.fit(x_treino, y_treino)
         rf_pred = rf.predict(x_teste)
         modelos["random_forest"] = metricas(y_teste, rf_pred)

@@ -50,3 +50,15 @@ def teste_extensao_invalida():
 
     assert response.status_code == 400
     assert "Formato não suportado" in response.get_json()["erro"]
+
+
+def teste_config_padrao_desmarcado_exige_config():
+    response = client().post("/api/analisar", data={
+        "arquivo": (io.BytesIO(b"1,2,A\n3,4,A\n5,6,B\n7,8,B\n"), "dados.csv"),
+        "metodo": "classificacao",
+        "modelo": "svc",
+        "padrao": "false",
+        "test_size": "20",
+    }, content_type="multipart/form-data")
+
+    assert response.status_code == 200

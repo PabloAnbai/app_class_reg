@@ -62,8 +62,145 @@ document.addEventListener('DOMContentLoaded', () => {
     darkModeCheckbox.addEventListener('change', () => {
         toggleTheme();
     });
-    
-    // 4. Lógica de Upload de Arquivo (Visual)
+
+    // 4. Lógica de aba e visualização dos dados
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    function setActiveTab(tabName) {
+        tabButtons.forEach((button) => {
+            const isActive = button.dataset.tab === tabName;
+            button.classList.toggle('active', isActive);
+            button.classList.toggle('bg-primary', isActive);
+            button.classList.toggle('text-white', isActive);
+            button.classList.toggle('shadow-sm', isActive);
+            button.classList.toggle('bg-gray-100', !isActive);
+            button.classList.toggle('text-gray-700', !isActive);
+            button.classList.toggle('dark:bg-gray-800', !isActive);
+            button.classList.toggle('dark:text-gray-200', !isActive);
+        });
+
+        tabPanels.forEach((panel) => {
+            const shouldShow = panel.id === `${tabName}-panel`;
+            panel.classList.toggle('hidden', !shouldShow);
+        });
+    }
+
+    tabButtons.forEach((button) => {
+        button.addEventListener('click', () => setActiveTab(button.dataset.tab));
+    });
+
+    function parseCsvRows(text) {
+        const rows = [];
+        let row = [];
+        let value = '';
+        let inQuotes = false;
+
+        for (let index = 0; index < text.length; index += 1) {
+            const char = text[index];
+
+            if (char === '"') {
+                if (inQuotes && text[index + 1] === '"') {
+                    value += '"';
+                    index += 1;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                row.push(value);
+                value = '';
+            } else if ((char === '\n' || char === '\r') && !inQuotes) {
+                if (char === '\r' && text[index + 1] === '\n') {
+                    index += 1;
+                }
+                row.push(value);
+                value = '';
+
+                const hasData = row.some((cell) => String(cell).trim() !== '');
+                if (hasData) {
+                    rows.push(row);
+                }
+                row = [];
+            } else {
+                value += char;
+            }
+        }
+
+        if (value.length > 0 || row.length > 0) {
+            row.push(value);
+            const hasData = row.some((cell) => String(cell).trim() !== '');
+            if (hasData) {
+                rows.push(row);
+            }
+        }
+
+        return rows;
+    }
+
+    async function renderDataPreview(file) {
+        const table = document.getElementById('data-preview-table');
+        const dataRecords = document.getElementById('data-records');
+
+        if (!file) {
+            table.innerHTML = '';
+            dataRecords.textContent = 'Nenhum arquivo carregado';
+            return;
+        }
+
+        let rows = [];
+        const nomeArquivo = file.name.toLowerCase();
+
+        try {
+            if (nomeArquivo.endsWith('.csv')) {
+                const text = await file.text();
+                rows = parseCsvRows(text);
+            } else if (nomeArquivo.endsWith('.xlsx')) {
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+                const planilha = workbook.Sheets[workbook.SheetNames[0]];
+                rows = XLSX.utils.sheet_to_json(planilha, { header: 1, defval: '' });
+            }
+        } catch (error) {
+            dataRecords.textContent = 'Erro ao carregar a pré-visualização';
+            table.innerHTML = `<tbody><tr><td class="p-4 text-sm text-red-600">Não foi possível ler o arquivo selecionado.</td></tr></tbody>`;
+            console.error(error);
+            return;
+        }
+
+        const linhasValidas = rows.filter((row) => row && row.some((cell) => String(cell).trim() !== ''));
+
+        if (!linhasValidas.length) {
+            table.innerHTML = '<tbody><tr><td class="p-4 text-sm text-gray-500">Arquivo sem dados válidos para exibir.</td></tr></tbody>';
+            dataRecords.textContent = '0 linhas';
+            return;
+        }
+
+        const maxCols = Math.max(...linhasValidas.map((row) => row.length), 1);
+        const headers = Array.from({ length: maxCols }, (_, index) => `<th class="px-3 py-2">${index + 1}</th>`).join('');
+        const limit = Math.min(linhasValidas.length, 30);
+        const bodyRows = linhasValidas.slice(0, limit).map((row, rowIndex) => {
+            const cells = Array.from({ length: maxCols }, (_, columnIndex) => {
+                const value = row[columnIndex] ?? '';
+                return `<td class="px-3 py-2">${String(value)}</td>`;
+            }).join('');
+            return `<tr><td class="row-index px-2 py-2">${rowIndex + 1}</td>${cells}</tr>`;
+        }).join('');
+
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th class="row-index px-2 py-2">#</th>
+                    ${headers}
+                </tr>
+            </thead>
+            <tbody>${bodyRows}</tbody>
+        `;
+
+        dataRecords.textContent = `${limit} de ${linhasValidas.length} linhas`;
+        setActiveTab('dados');
+    }
+
+    // 5. Lógica de Upload de Arquivo (Visual)
     const fileUploadBox = document.querySelector('.border-dashed');
     const fileInput = document.getElementById('file-upload');
     const fileText = fileUploadBox.querySelector('span');
@@ -72,18 +209,22 @@ document.addEventListener('DOMContentLoaded', () => {
         fileInput.click();
     });
 
-    fileInput.addEventListener('change', (e) => {
+    fileInput.addEventListener('change', async (e) => {
         if (e.target.files.length > 0) {
-            fileText.textContent = e.target.files[0].name;
+            const selectedFile = e.target.files[0];
+            fileText.textContent = selectedFile.name;
             fileUploadBox.classList.add('border-primary', 'bg-blue-50', 'dark:bg-gray-700');
+            await renderDataPreview(selectedFile);
         } else {
             fileText.textContent = 'Carregar Arquivo (.csv, .xlsx)';
             fileUploadBox.classList.remove('border-primary', 'bg-blue-50', 'dark:bg-gray-700');
+            await renderDataPreview(null);
         }
     });
 
     const taskType = document.getElementById('task-type');
     const analysisMethod = document.getElementById('analysis-method');
+    const defaultConfiguration = document.getElementById('default-configuration');
     const runButton = document.getElementById('run-button');
     const runAllButton = document.getElementById('run-all-button');
     const status = document.getElementById('analysis-status');
@@ -140,6 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (model) {
             formData.append('modelo', model);
         }
+        formData.append('padrao', defaultConfiguration.checked ? 'true' : 'false');
         formData.append('test_size', rangeInput.value);
 
         const response = await fetch('/api/analisar', {
@@ -216,4 +358,6 @@ document.addEventListener('DOMContentLoaded', () => {
             runAllButton.disabled = false;
         }
     });
+
+    setActiveTab('resultados');
 });

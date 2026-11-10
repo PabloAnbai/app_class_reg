@@ -53,7 +53,7 @@ def ler_arquivo(arquivo):
     return atributos.values, target.values
 
 
-def executar(arquivo, test_size=0.2, modelo=None):
+def executar(arquivo, test_size=0.2, modelo=None, configuracoes=None):
     feat, target = ler_arquivo(arquivo)
     x_treino, x_teste, y_treino, y_teste = train_test_split(
         feat,
@@ -67,27 +67,21 @@ def executar(arquivo, test_size=0.2, modelo=None):
     x_teste_sc = scaler.transform(x_teste)
 
     modelos = {}
+    configuracoes = configuracoes or {}
 
     if modelo in (None, "mlp"):
-        mlp = MLPRegressor(
-            hidden_layer_sizes=(150,),
-            activation="relu",
-            solver="lbfgs",
-            alpha=0.01,
-            max_iter=1000,
-            random_state=42,
-        )
+        parametros_mlp = configuracoes.get("mlp", {})
+        mlp = MLPRegressor(**parametros_mlp)
         mlp.fit(x_treino_sc, y_treino)
         mlp_pred = mlp.predict(x_teste_sc)
         modelos["mlp"] = metricas(y_teste, mlp_pred)
 
     if modelo in (None, "random_forest"):
-        rf = RandomForestRegressor(
-            n_estimators=80,
-            criterion="squared_error",
-            random_state=42,
-            n_jobs=-1,
+        parametros_rf = configuracoes.get(
+            "random_forest_regressao",
+            configuracoes.get("random_forest", {}),
         )
+        rf = RandomForestRegressor(**parametros_rf)
         rf.fit(x_treino, y_treino)
         rf_pred = rf.predict(x_teste)
         modelos["random_forest"] = metricas(y_teste, rf_pred)
