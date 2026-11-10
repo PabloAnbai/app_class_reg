@@ -26,6 +26,22 @@ def teste_csv_latin1_com_cabecalho_e_classificacao():
     assert 0 <= resultado["modelos"]["svc"]["acuracia"] <= 1
 
 
+def teste_classificacao_usa_target_selecionado():
+    linhas = ["area,classe,perimetro"]
+    for indice in range(20):
+        classe = "acao" if indice % 2 == 0 else "opcao"
+        linhas.append(f"{indice},{classe},{indice * 2}")
+
+    atributos, classes = ml_clas_sk.ler_arquivo(
+        csv_file("\n".join(linhas)), target_column=1
+    )
+
+    assert atributos.shape == (20, 2)
+    assert atributos[0].tolist() == [0, 0]
+    assert classes[0] == "acao"
+    assert classes[1] == "opcao"
+
+
 def teste_classificacao_rejeita_classe_com_poucas_amostras():
     linhas = ["area,classe"]
     for indice in range(12):
@@ -50,3 +66,17 @@ def teste_regressao_retorna_metricas():
     assert "mlp" in resultado["modelos"]
     assert "random_forest" in resultado["modelos"]
     assert set(resultado["modelos"]["mlp"]) == {"mae", "mse", "rmse", "r2"}
+
+
+def teste_regressao_usa_target_selecionado():
+    linhas = ["valor,area,perimetro"]
+    for indice in range(20):
+        linhas.append(f"{indice * 3 + 1},{indice},{indice * 2}")
+
+    atributos, target = ml_reg_sk.ler_arquivo(
+        csv_file("\n".join(linhas)), target_column=0
+    )
+
+    assert atributos.shape == (20, 2)
+    assert atributos[0].tolist() == [0, 0]
+    assert target[0] == 1

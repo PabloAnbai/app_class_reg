@@ -62,3 +62,35 @@ def teste_config_padrao_desmarcado_exige_config():
     }, content_type="multipart/form-data")
 
     assert response.status_code == 200
+
+
+def teste_api_encaminha_coluna_target_selecionada(monkeypatch):
+    chamadas = {}
+
+    def executar(arquivo, test_size, modelo, configuracoes, target_column):
+        chamadas["target_column"] = target_column
+        return {"modelos": {}}
+
+    monkeypatch.setattr("ml_clas_sk.executar", executar)
+    response = client().post("/api/analisar", data={
+        "arquivo": (io.BytesIO(b"1,A,2\n3,B,4\n"), "dados.csv"),
+        "metodo": "classificacao",
+        "modelo": "svc",
+        "target_column": "1",
+        "test_size": "20",
+    }, content_type="multipart/form-data")
+
+    assert response.status_code == 200
+    assert chamadas["target_column"] == 1
+
+
+def teste_api_rejeita_coluna_target_invalida():
+    response = client().post("/api/analisar", data={
+        "arquivo": (io.BytesIO(b"1,A,2\n3,B,4\n"), "dados.csv"),
+        "metodo": "classificacao",
+        "target_column": "nao-e-um-indice",
+        "test_size": "20",
+    }, content_type="multipart/form-data")
+
+    assert response.status_code == 400
+    assert "coluna Target" in response.get_json()["erro"]

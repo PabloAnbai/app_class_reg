@@ -6,6 +6,7 @@ Aplicação web Flask para executar modelos de classificação e regressão com 
 
 - Interface responsiva com tema claro e escuro.
 - Seleção de classificação ou regressão.
+- Seleção da coluna Target pela interface, com a última coluna como padrão.
 - Configuracao da porcentagem de dados reservada para teste.
 - Modelos MLP e Random Forest.
 - Metricas de classificacao e regressao.
@@ -68,11 +69,11 @@ http://127.0.0.1:5000
 
 ## Formato dos dados
 
-O arquivo não deve conter cabeçalho de várias linhas.
+O arquivo não deve conter cabeçalho de várias linhas. Na interface, selecione a coluna que contém o valor a prever; por padrão, a última coluna é usada.
 
 ### Classificação
 
-As colunas anteriores à última precisam ser numéricas. A última coluna contém o rótulo da classe.
+As colunas usadas como atributos precisam ser numéricas. A coluna Target contém o rótulo da classe.
 
 ```csv
 area,perimetro,classe
@@ -86,7 +87,7 @@ Cada classe precisa ter pelo menos duas amostras. O conjunto precisa ter pelo me
 
 ### Regressão
 
-Todas as colunas precisam ser numéricas. A última coluna representa o valor previsto pelo modelo.
+As colunas usadas como atributos e a coluna Target precisam ser numéricas. A coluna Target representa o valor previsto pelo modelo.
 
 ```csv
 area,perimetro,valor

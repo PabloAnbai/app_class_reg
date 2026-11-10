@@ -92,6 +92,7 @@ def analisar():
     arquivo = request.files.get("arquivo")
     metodo = request.form.get("metodo")
     modelo = request.form.get("modelo") or None
+    target_column_text = request.form.get("target_column")
     usar_padrao = request.form.get("padrao", "true").lower() == "true"
     test_size = int(request.form.get("test_size", 20)) / 100
 
@@ -109,13 +110,26 @@ def analisar():
         raise BadRequest("Formato não suportado. Use CSV ou XLSX.")
     if test_size < 0.1 or test_size > 0.9:
         raise BadRequest("Porcentagem de teste inválida.")
+    if target_column_text is not None:
+        try:
+            target_column = int(target_column_text)
+        except ValueError as erro:
+            raise BadRequest("A coluna Target selecionada é inválida.") from erro
+        if target_column < 0:
+            raise BadRequest("A coluna Target selecionada é inválida.")
+    else:
+        target_column = None
 
     try:
         configuracoes = None if usar_padrao else carregar_configuracoes()
         if metodo == "classificacao":
-            resultado = ml_clas_sk.executar(arquivo, test_size, modelo, configuracoes)
+            resultado = ml_clas_sk.executar(
+                arquivo, test_size, modelo, configuracoes, target_column
+            )
         else:
-            resultado = ml_reg_sk.executar(arquivo, test_size, modelo, configuracoes)
+            resultado = ml_reg_sk.executar(
+                arquivo, test_size, modelo, configuracoes, target_column
+            )
     except Exception as erro:
         raise BadRequest(f"Não foi possível analisar o arquivo: {erro}") from erro
 

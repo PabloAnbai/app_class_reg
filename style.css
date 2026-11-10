@@ -62,6 +62,27 @@
     background: rgba(31, 41, 55, 0.8);
 }
 
+.excel-table thead th.target-column {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.dark .excel-table thead th.target-column {
+    background: #1e3a8a;
+    color: #dbeafe;
+}
+
+.excel-table tbody td.target-column {
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 600;
+}
+
+.dark .excel-table tbody td.target-column {
+    background: rgba(30, 58, 138, 0.45);
+    color: #dbeafe;
+}
+
 .excel-table .row-index {
     position: sticky;
     left: 0;

@@ -24,7 +24,7 @@ def ler_csv(dados):
     raise ValueError("Não foi possível identificar a codificação do arquivo CSV.")
 
 
-def ler_arquivo(arquivo):
+def ler_arquivo(arquivo, target_column=None):
     if hasattr(arquivo, "read"):
         name = getattr(arquivo, "filename", "")
         arquivo.seek(0)
@@ -40,8 +40,18 @@ def ler_arquivo(arquivo):
             with open(arquivo, "rb") as entrada:
                 df = ler_csv(entrada.read())
 
+    if df.empty:
+        raise ValueError("O arquivo não contém colunas de dados.")
+    if target_column is None:
+        target_column = len(df.columns) - 1
+    if not isinstance(target_column, int) or not 0 <= target_column < len(df.columns):
+        raise ValueError("A coluna Target selecionada não existe no arquivo.")
+
     df = df.dropna()
-    atributo_colunas = df.columns[:-1]
+    coluna_target = df.columns[target_column]
+    atributo_colunas = [coluna for coluna in df.columns if coluna != coluna_target]
+    if not atributo_colunas:
+        raise ValueError("O arquivo precisa ter ao menos uma coluna de atributos.")
     for coluna in atributo_colunas:
         df[coluna] = pd.to_numeric(df[coluna], errors="coerce")
     df = df.dropna(subset=list(atributo_colunas))
@@ -49,16 +59,16 @@ def ler_arquivo(arquivo):
     if df.empty:
         raise ValueError("Nenhum dado numérico foi encontrado nas colunas de atributos.")
 
-    atributos = df.iloc[:, :-1].astype(float)
-    classes_originais = df.iloc[:, -1].tolist()
+    atributos = df.loc[:, atributo_colunas].astype(float)
+    classes_originais = df[coluna_target].tolist()
     return atributos.values, classes_originais
 
 
-def executar(arquivo, test_size=0.2, modelo=None, configuracoes=None):
+def executar(arquivo, test_size=0.2, modelo=None, configuracoes=None, target_column=None):
     if modelo not in (None, "svc", "random_forest"):
         raise ValueError("Modelo inválido para classificação.")
 
-    feat, classes_originais = ler_arquivo(arquivo)
+    feat, classes_originais = ler_arquivo(arquivo, target_column)
     classes = sorted(set(classes_originais), key=str)
     contagem_classes = Counter(classes_originais)
     classes_invalidas = [classe for classe in classes if contagem_classes[classe] < 2]

@@ -23,7 +23,7 @@ def ler_csv(dados):
     raise ValueError("Não foi possível identificar a codificação do arquivo CSV.")
 
 
-def ler_arquivo(arquivo):
+def ler_arquivo(arquivo, target_column=None):
     if hasattr(arquivo, "read"):
         name = getattr(arquivo, "filename", "")
         arquivo.seek(0)
@@ -40,21 +40,32 @@ def ler_arquivo(arquivo):
                 df = ler_csv(entrada.read())
 
     df = df.dropna()
-    numericas = df.columns
-    for coluna in numericas:
+    if df.empty:
+        raise ValueError("O arquivo não contém colunas de dados.")
+    if target_column is None:
+        target_column = len(df.columns) - 1
+    if not isinstance(target_column, int) or not 0 <= target_column < len(df.columns):
+        raise ValueError("A coluna Target selecionada não existe no arquivo.")
+
+    coluna_target = df.columns[target_column]
+    atributo_colunas = [coluna for coluna in df.columns if coluna != coluna_target]
+    if not atributo_colunas:
+        raise ValueError("O arquivo precisa ter ao menos uma coluna de atributos.")
+
+    for coluna in [*atributo_colunas, coluna_target]:
         df[coluna] = pd.to_numeric(df[coluna], errors="coerce")
-    df = df.dropna()
+    df = df.dropna(subset=[*atributo_colunas, coluna_target])
 
     if df.empty:
         raise ValueError("Nenhum dado numérico foi encontrado no arquivo.")
 
-    atributos = df.iloc[:, :-1].astype(float)
-    target = df.iloc[:, -1].astype(float)
+    atributos = df.loc[:, atributo_colunas].astype(float)
+    target = df[coluna_target].astype(float)
     return atributos.values, target.values
 
 
-def executar(arquivo, test_size=0.2, modelo=None, configuracoes=None):
-    feat, target = ler_arquivo(arquivo)
+def executar(arquivo, test_size=0.2, modelo=None, configuracoes=None, target_column=None):
+    feat, target = ler_arquivo(arquivo, target_column)
     x_treino, x_teste, y_treino, y_teste = train_test_split(
         feat,
         target,

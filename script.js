@@ -91,6 +91,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function parseCsvRows(text) {
+        const primeiraLinha = text.split(/\r?\n/, 1)[0] || '';
+        const delimitadores = [',', ';', '\t'];
+        const delimitador = delimitadores.reduce((melhor, candidato) => {
+            const quantidade = primeiraLinha.split(candidato).length - 1;
+            return quantidade > melhor.quantidade
+                ? { valor: candidato, quantidade }
+                : melhor;
+        }, { valor: ',', quantidade: 0 }).valor;
         const rows = [];
         let row = [];
         let value = '';
@@ -106,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     inQuotes = !inQuotes;
                 }
-            } else if (char === ',' && !inQuotes) {
+            } else if (char === delimitador && !inQuotes) {
                 row.push(value);
                 value = '';
             } else if ((char === '\n' || char === '\r') && !inQuotes) {
@@ -140,10 +148,13 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderDataPreview(file) {
         const table = document.getElementById('data-preview-table');
         const dataRecords = document.getElementById('data-records');
+        const targetColumn = document.getElementById('target-column');
 
         if (!file) {
             table.innerHTML = '';
             dataRecords.textContent = 'Nenhum arquivo carregado';
+            targetColumn.replaceChildren(new Option('Carregue um arquivo para selecionar a coluna...', ''));
+            targetColumn.disabled = true;
             return;
         }
 
@@ -163,6 +174,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             dataRecords.textContent = 'Erro ao carregar a pré-visualização';
             table.innerHTML = `<tbody><tr><td class="p-4 text-sm text-red-600">Não foi possível ler o arquivo selecionado.</td></tr></tbody>`;
+            targetColumn.replaceChildren(new Option('Não foi possível ler as colunas do arquivo', ''));
+            targetColumn.disabled = true;
             console.error(error);
             return;
         }
@@ -172,16 +185,41 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!linhasValidas.length) {
             table.innerHTML = '<tbody><tr><td class="p-4 text-sm text-gray-500">Arquivo sem dados válidos para exibir.</td></tr></tbody>';
             dataRecords.textContent = '0 linhas';
+            targetColumn.replaceChildren(new Option('Arquivo sem colunas disponíveis', ''));
+            targetColumn.disabled = true;
             return;
         }
 
         const maxCols = Math.max(...linhasValidas.map((row) => row.length), 1);
-        const headers = Array.from({ length: maxCols }, (_, index) => `<th class="px-3 py-2">${index + 1}</th>`).join('');
+        targetColumn.replaceChildren();
+        Array.from({ length: maxCols }, (_, index) => {
+            const nome = String(linhasValidas[0][index] ?? '').trim();
+            const descricao = nome ? ` — ${nome}` : '';
+            targetColumn.add(new Option(`Coluna ${index + 1}${descricao}`, String(index)));
+        });
+        targetColumn.value = String(maxCols - 1);
+        targetColumn.disabled = false;
+
+        const colunaTarget = Number(targetColumn.value);
+        const headers = Array.from({ length: maxCols }, (_, index) => {
+            const isTarget = index === colunaTarget;
+            const rotulo = isTarget ? `${index + 1} · TARGET` : index + 1;
+            const classe = isTarget ? 'target-column' : '';
+            return `<th class="px-3 py-2 ${classe}">${rotulo}</th>`;
+        }).join('');
         const limit = Math.min(linhasValidas.length, 30);
         const bodyRows = linhasValidas.slice(0, limit).map((row, rowIndex) => {
             const cells = Array.from({ length: maxCols }, (_, columnIndex) => {
                 const value = row[columnIndex] ?? '';
-                return `<td class="px-3 py-2">${String(value)}</td>`;
+                const classe = columnIndex === colunaTarget ? 'target-column' : '';
+                const valorSeguro = String(value).replace(/[&<>"']/g, (caractere) => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                })[caractere]);
+                return `<td class="px-3 py-2 ${classe}">${valorSeguro}</td>`;
             }).join('');
             return `<tr><td class="row-index px-2 py-2">${rowIndex + 1}</td>${cells}</tr>`;
         }).join('');
@@ -198,6 +236,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         dataRecords.textContent = `${limit} de ${linhasValidas.length} linhas`;
         setActiveTab('dados');
+
+        targetColumn.onchange = () => {
+            const novaColuna = Number(targetColumn.value);
+            table.querySelectorAll('thead th:not(.row-index), tbody td:not(.row-index)').forEach((cell, index) => {
+                const coluna = index % maxCols;
+                cell.classList.toggle('target-column', coluna === novaColuna);
+                if (cell.tagName === 'TH') {
+                    cell.textContent = coluna === novaColuna ? `${coluna + 1} · TARGET` : String(coluna + 1);
+                }
+            });
+        };
     }
 
     // 5. Lógica de Upload de Arquivo (Visual)
@@ -278,6 +327,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData();
         formData.append('arquivo', fileInput.files[0]);
         formData.append('metodo', method);
+        const targetColumn = document.getElementById('target-column');
+        if (!targetColumn.disabled && targetColumn.value !== '') {
+            formData.append('target_column', targetColumn.value);
+        }
         if (model) {
             formData.append('modelo', model);
         }
