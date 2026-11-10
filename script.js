@@ -316,6 +316,60 @@ document.addEventListener('DOMContentLoaded', () => {
         status.classList.remove('hidden');
     }
 
+    const assistantQuestion = document.getElementById('assistant-question');
+    const assistantAskButton = document.getElementById('assistant-ask-button');
+    const assistantButtonLabel = document.getElementById('assistant-button-label');
+    const assistantAnswer = document.getElementById('assistant-answer');
+
+    assistantAskButton.addEventListener('click', async () => {
+        const pergunta = assistantQuestion.value.trim();
+        if (!pergunta) {
+            showStatus('Descreva seu problema para perguntar ao assistente.', true);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('pergunta', pergunta);
+        if (fileInput.files.length) {
+            formData.append('arquivo', fileInput.files[0]);
+        }
+
+        assistantAskButton.disabled = true;
+        assistantButtonLabel.textContent = 'Carregando...';
+        assistantAnswer.textContent = '';
+        assistantAnswer.classList.add('hidden');
+        showStatus('Consultando o assistente de IA...');
+
+        try {
+            const response = await fetch('/api/perguntar', {
+                method: 'POST',
+                body: formData,
+            });
+            let data;
+            try {
+                data = await response.json();
+            } catch {
+                throw new Error('O servidor retornou uma resposta inválida.');
+            }
+            if (!response.ok) {
+                throw new Error(data.erro || 'Não foi possível obter uma resposta do assistente.');
+            }
+            assistantAnswer.textContent = data.resposta;
+            assistantAnswer.classList.remove('hidden');
+            showStatus('Resposta do assistente recebida.');
+        } catch (error) {
+            const mensagem = error instanceof TypeError
+                ? 'Não foi possível conectar ao assistente. Verifique sua conexão e tente novamente.'
+                : error.message || 'Não foi possível obter uma resposta do assistente.';
+            assistantAnswer.textContent = mensagem;
+            assistantAnswer.classList.remove('hidden');
+            showStatus(mensagem, true);
+        } finally {
+            assistantAskButton.disabled = false;
+            assistantButtonLabel.textContent = 'Perguntar';
+        }
+    });
+
     async function runAnalysis(method, model = '') {
         if (!fileInput.files.length) {
             throw new Error('Selecione um arquivo CSV ou XLSX.');

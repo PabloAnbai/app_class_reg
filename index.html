@@ -60,7 +60,7 @@
     </header>
 
     <!-- Conteúdo Principal -->
-    <main class="flex-grow p-6 flex items-center justify-center">
+    <main class="flex-grow p-6 flex flex-col items-center justify-center gap-6">
         <div class="w-full max-w-5xl bg-white dark:bg-dark-card rounded-xl shadow-xl overflow-hidden flex flex-col md:flex-row transition-colors duration-300 border border-gray-200 dark:border-gray-700">
             
             <!-- Painel Esquerdo (Controles) -->
@@ -211,6 +211,27 @@
                 </div>
             </div>
         </div>
+
+        <section class="w-full max-w-5xl bg-white dark:bg-dark-card rounded-xl shadow-xl p-6 md:p-8 border border-gray-200 dark:border-gray-700" aria-labelledby="assistant-title">
+            <div class="flex items-center gap-3 mb-4">
+                <i class="fa-solid fa-wand-magic-sparkles text-xl text-primary" aria-hidden="true"></i>
+                <h2 id="assistant-title" class="text-xl font-bold text-gray-800 dark:text-white">Assistente de IA</h2>
+            </div>
+            <label for="assistant-question" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Descreva seu problema ou seus dados
+            </label>
+            <textarea id="assistant-question" maxlength="2000" rows="4"
+                class="w-full p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary outline-none dark:text-white"
+                placeholder="Ex.: quero prever a evasão de alunos a partir de dados acadêmicos..."></textarea>
+            <p class="mt-1 mb-4 text-xs text-gray-500 dark:text-gray-400">
+                Se um arquivo estiver selecionado, apenas um resumo estatístico será enviado ao modelo.
+            </p>
+            <button id="assistant-ask-button" type="button"
+                class="px-5 py-3 bg-primary text-white font-bold rounded-lg hover:bg-blue-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                <i class="fa-solid fa-paper-plane mr-2" aria-hidden="true"></i><span id="assistant-button-label">Perguntar</span>
+            </button>
+            <pre id="assistant-answer" class="hidden mt-5 p-4 whitespace-pre-wrap break-words rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-800 dark:text-gray-200" role="status"></pre>
+        </section>
     </main>
 
     <script src="script.js"></script>
